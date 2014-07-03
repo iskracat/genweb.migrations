@@ -19,6 +19,8 @@
     <!-- Register all components defined with grok -->
     <grok:grok package="." />
 
+    <adapter factory=".converters.NamedFileDeserializer" />
+
     <!-- Register the installation GenericSetup extension profile -->
     <genericsetup:registerProfile
         name="default"
