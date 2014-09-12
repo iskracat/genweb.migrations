@@ -39,13 +39,14 @@ class CatalogSourceSection(object):
                                                  '').split()
 
         # Forge request
-        payload = {'X-Oauth-Username': remote_username,
+        self.payload = {'catalog_query': catalog_query}
+        self.headers = {'X-Oauth-Username': remote_username,
                    'X-Oauth-Token': remote_token,
                    'X-Oauth-Scope': 'widgetcli',
-                   'catalog_query': catalog_query
                    }
+
         # Make request
-        resp = requests.get('{}{}/get_catalog_results'.format(self.remote_url, catalog_path), params=payload)
+        resp = requests.get('{}{}/get_catalog_results'.format(self.remote_url, catalog_path), params=self.payload, headers=self.headers)
 
         self.item_paths = sorted(simplejson.loads(resp.text))
 
@@ -80,11 +81,13 @@ class CatalogSourceSection(object):
 
     def get_remote_item(self, path):
         item_url = '%s%s/get_item' % (self.remote_url, urllib.quote(path))
-        try:
-            f = urllib2.urlopen(item_url)
-            item_json = f.read()
-        except urllib2.URLError, e:
-            logger.error("Failed reading item from %s. %s" % (item_url, str(e)))
+
+        resp = requests.get(item_url, params=self.payload, headers=self.headers)
+
+        if resp.status_code == 200:
+            item_json = resp.text
+        else:
+            logger.error("Failed reading item from %s. %s" % (item_url, resp.status_code))
             return None
         try:
             item = simplejson.loads(item_json)

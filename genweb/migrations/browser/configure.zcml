@@ -15,6 +15,11 @@
         name="genweb.migrations.sections.datafields"
         />
 
+    <utility
+        component=".catalogsource.CatalogSourceSection"
+        name="genweb.migrations.catalogsource"
+        />
+
     <transmogrifier:registerConfig
         name="genweb.migrations.test"
         title="Migration configuration for querying the catalog of a Plone site"

@@ -2,8 +2,6 @@ from five import grok
 from plone import api
 from Products.CMFPlone.interfaces import IPloneSiteRoot
 
-from collective.transmogrifier.transmogrifier import Transmogrifier
-
 
 class SetupMigration(grok.View):
     grok.context(IPloneSiteRoot)
