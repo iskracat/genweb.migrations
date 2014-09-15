@@ -57,7 +57,7 @@ class DataFields(object):
                 yield item
                 continue
 
-            obj = self.context.unrestrictedTraverse(item['_path'].lstrip('/'), None)
+            obj = self.context.unrestrictedTraverse(str(item['_path'].lstrip('/')), None)
 
             # path doesn't exist
             if obj is None:
@@ -84,8 +84,10 @@ class DataFields(object):
                     field = obj.getField(fieldname)
                     if field is None:
                         continue
-                    value = base64.b64decode(item[key]['data'])
-
+                    if item[key].has_key('data'):
+                        value = base64.b64decode(item[key]['data'])
+                    else:
+                        value = ''
                     # XXX: handle other data field implementations
                     old_value = field.get(obj).data
                     if value != old_value:
@@ -96,7 +98,7 @@ class DataFields(object):
                     for name, fieldd in getFieldsInOrder(obj.getTypeInfo().lookupSchema()):
                         if name == fieldname:
                             field = fieldd
-                    import ipdb;ipdb.set_trace()
+
                     deserializer = IDeserializer(field)
                     value = deserializer(item[key], None, item)
                     field.set(field.interface(obj), value)

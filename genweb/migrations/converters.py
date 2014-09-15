@@ -19,6 +19,8 @@ from zope.schema.interfaces import IFromUnicode
 
 from interfaces import ISerializer, IDeserializer
 
+import requests
+
 
 class NamedFileSerializer(object):
     implements(ISerializer)
@@ -57,7 +59,15 @@ class NamedFileDeserializer(object):
             if file is not None:
                 data = filestore[file]['data']
             else:
-                data = base64.b64decode(value['data'])
+                if 'data' in value:
+                    data = base64.b64decode(value['data'])
+                else:
+                    resp = requests.get(value['data_uri'], headers=item['_auth_headers'])
+                    if resp.ok:
+                        data = resp.content
+                    else:
+                        raise ValueError('Response not ok while retrieving the file data. Error: {}'.format(resp.status_code))
+
         elif isinstance(value, str):
             data = value
             filename = item.get('_filename', None)

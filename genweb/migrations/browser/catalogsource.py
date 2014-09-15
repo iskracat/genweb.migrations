@@ -77,6 +77,7 @@ class CatalogSourceSection(object):
                 item = self.get_remote_item(path)
                 if item:
                     item['_path'] = item['_path'][self.site_path_length:]
+                    item['_auth_headers'] = self.headers
                     yield item
 
     def get_remote_item(self, path):
