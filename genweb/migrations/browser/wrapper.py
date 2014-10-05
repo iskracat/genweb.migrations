@@ -395,59 +395,64 @@ class Wrapper(dict):
                     self[unicode(fieldname)] = value
 
             elif type_ in ['ImageField', 'FileField', 'AttachmentField', 'ExtensionBlobField']:
+
                 fieldname = unicode('_datafield_' + fieldname)
 
                 value = self._get_at_field_value(field)
                 value2 = value
 
-                if type(value) is not str:
-                    if type(value.data) is str:
-                        value = base64.b64encode(value.data)
-                    else:
-                        data = value.data
-                        value = ''
-                        while data is not None:
-                            value += data.data
-                            data = data.next
-                        value = base64.b64encode(value)
-
                 try:
                     max_filesize = int(
-                        os.environ.get('JSONIFY_MAX_FILESIZE', 20000000)
+                        os.environ.get('JSONIFY_MAX_FILESIZE', 2000)
                     )
                 except ValueError:
-                    max_filesize = 20000000
+                    max_filesize = 2000
 
-                if value and len(value) < max_filesize:
-                    size = value2.getSize()
-                    try:
-                        fname = field.getFilename(self.context)
-                    except AttributeError:
-                        fname = value2.getFilename()
+                if value.get_size() and value.get_size() < max_filesize:
+                    if type(value) is not str:
+                        if type(value.data) is str:
+                            value = base64.b64encode(value.data)
+                        else:
+                            data = value.data
+                            value = ''
+                            while data is not None:
+                                value += data.data
+                                data = data.next
+                            value = base64.b64encode(value)
 
-                    try:
-                        fname = self.decode(fname)
-                    except AttributeError:
-                        # maybe an int?
-                        fname = unicode(fname)
-                    except Exception, e:
-                        raise Exception(
-                            'problems with %s: %s' % (
-                                self.context.absolute_url(), str(e)
-                            )
+                    self[fieldname] = {'data': value}
+                else:
+                    data_uri = '{0}/at_download/{1}'.format(self.context.absolute_url(), fieldname.replace('_datafield_', ''))
+                    self[fieldname] = {'data_uri': data_uri}
+
+                size = value2.get_size()
+                try:
+                    fname = field.getFilename(self.context)
+                except AttributeError:
+                    fname = value2.getFilename()
+
+                try:
+                    fname = self.decode(fname)
+                except AttributeError:
+                    # maybe an int?
+                    fname = unicode(fname)
+                except Exception, e:
+                    raise Exception(
+                        'problems with %s: %s' % (
+                            self.context.absolute_url(), str(e)
                         )
+                    )
 
-                    try:
-                        ctype = field.getContentType(self.context)
-                    except AttributeError:
-                        ctype = value2.getContentType()
+                try:
+                    ctype = field.getContentType(self.context)
+                except AttributeError:
+                    ctype = value2.getContentType()
 
-                    self[fieldname] = {
-                        'data': value,
-                        'size': size,
-                        'filename': fname or '',
-                        'content_type': ctype
-                    }
+                self[fieldname].update({
+                    'size': size,
+                    'filename': fname or '',
+                    'content_type': ctype
+                })
 
             elif type_ in ['ReferenceField']:
                 pass

@@ -32,7 +32,9 @@ setup(name='genweb.migrations',
           'five.grok',
           'transmogrify.dexterity',
           'quintagroup.transmogrifier',
-          'collective.jsonmigrator'
+          'collective.jsonmigrator',
+          'plone.api',
+          'pas.plugins.osiris'
       ],
       entry_points="""
       # -*- Entry points: -*-
