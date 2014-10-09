@@ -4,10 +4,11 @@ from zope.component import getUtility
 from plone.registry.interfaces import IRegistry
 from Products.CMFPlone.interfaces import IPloneSiteRoot
 
-from genweb.controlpanel.interface import IGenwebControlPanelSettings
-
 import json
+import logging
 import requests
+
+logger = logging.getLogger(__name__)
 
 PROPERTIES_MAP = {'titolespai_ca': 'html_title_ca',
                   'titolespai_es': 'html_title_es',
@@ -17,8 +18,9 @@ PROPERTIES_MAP = {'titolespai_ca': 'html_title_ca',
                   'firmaunitat_en': 'signatura_unitat_en',
                   'contacteid': 'contacte_id',
                   'especific1': 'especific1',
-                  'especific2': 'especific2',
-                  'idestudiMaster': 'idestudi_master'}
+                  'especific3': 'especific2',
+                  'idestudiMaster': 'idestudi_master',
+                  'boolmaps': 'contacte_no_upcmaps'}
 
 
 class SetupMigration(grok.View):
@@ -44,6 +46,10 @@ class ExportGWConfig(grok.View):
         for gw_property in properties_map:
             result[gw_property['id']] = p_properties.genwebupc_properties.getProperty(gw_property['id'])
 
+        # Translation flavour - GW4.2 settings
+        legacy_skin = api.portal.get_tool('portal_skins').getDefaultSkin()
+        result.update({'legacy_skin': legacy_skin})
+
         self.request.response.setHeader("Content-type", "application/json")
         return json.dumps(result)
 
@@ -54,6 +60,8 @@ class ImportGWConfig(grok.View):
     grok.require('cmf.ManagePortal')
 
     def update(self):
+        from genweb.controlpanel.interface import IGenwebControlPanelSettings
+
         self.registry = getUtility(IRegistry)
         self.gw_settings = self.registry.forInterface(IGenwebControlPanelSettings)
 
@@ -71,6 +79,55 @@ class ImportGWConfig(grok.View):
         for prop in properties.keys():
             if prop in PROPERTIES_MAP.keys():
                 self.map_gw_property(PROPERTIES_MAP[prop], properties[prop])
+
+        if properties['tipusintranet'] == 'Visible':
+            self.gw_settings.amaga_identificacio = False
+        else:
+            self.gw_settings.amaga_identificacio = True
+
+        # N3
+        if properties['legacy_skin'] == 'GenwebUPC_Neutre3':
+            self.gw_settings.contacte_BBBDD_or_page = False
+            self.gw_settings.contacte_al_peu = False
+            self.gw_settings.directori_upc = False
+            self.gw_settings.contrast_colors_bn = False
+            self.gw_settings.treu_imatge_capsalera = False
+            self.gw_settings.treu_menu_horitzontal = False
+            self.gw_settings.treu_icones_xarxes_socials = False
+
+        # N2
+        elif properties['legacy_skin'] == 'GenwebUPC_Neutre2':
+            self.gw_settings.contacte_BBBDD_or_page = False
+            self.gw_settings.contacte_al_peu = False
+            self.gw_settings.directori_upc = False
+            self.gw_settings.contrast_colors_bn = False
+            self.gw_settings.treu_imatge_capsalera = False
+            self.gw_settings.treu_menu_horitzontal = True
+            self.gw_settings.treu_icones_xarxes_socials = False
+
+        # Unitat
+        elif properties['legacy_skin'] == 'GenwebUPC_Unitat':
+            self.gw_settings.contacte_BBBDD_or_page = False
+            self.gw_settings.contacte_al_peu = False
+            self.gw_settings.directori_upc = False
+            self.gw_settings.contrast_colors_bn = False
+            self.gw_settings.treu_imatge_capsalera = False
+            self.gw_settings.treu_menu_horitzontal = False
+            self.gw_settings.treu_icones_xarxes_socials = False
+
+        # Master
+        elif properties['legacy_skin'] == 'GenwebUPC_Master':
+            self.gw_settings.contacte_BBBDD_or_page = False
+            self.gw_settings.contacte_al_peu = False
+            self.gw_settings.directori_upc = False
+            self.gw_settings.contrast_colors_bn = False
+            self.gw_settings.treu_imatge_capsalera = False
+            self.gw_settings.treu_menu_horitzontal = True
+            self.gw_settings.treu_icones_xarxes_socials = False
+
+        else:
+            logger.error("OJO! skin del site no reconegut! %s" % properties['legacy_skin'])
+            return "OJO! skin del site no reconegut!" % properties['legacy_skin']
 
     def map_gw_property(self, prop, value):
         setattr(self.gw_settings, prop, value)

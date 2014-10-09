@@ -26,6 +26,7 @@ class CatalogSourceSection(object):
         self.remote_url = self.get_option('remote-url',
                                           'http://localhost:8080')
         remote_username = self.get_option('remote-username', 'admin')
+        remote_password = self.get_option('remote-username', 'admin')
         remote_token = self.get_option('remote-token', '')
 
         catalog_path = self.get_option('catalog-path', '/Plone/portal_catalog')
@@ -46,7 +47,8 @@ class CatalogSourceSection(object):
                    }
 
         # Make request
-        resp = requests.get('{}{}/get_catalog_results'.format(self.remote_url, catalog_path), params=self.payload, headers=self.headers)
+        # resp = requests.get('{}{}/get_catalog_results'.format(self.remote_url, catalog_path), params=self.payload, headers=self.headers)
+        resp = requests.get('{}{}/get_catalog_results'.format(self.remote_url, catalog_path), params=self.payload, auth=(remote_username, remote_password))
 
         self.item_paths = sorted(simplejson.loads(resp.text))
 
@@ -56,7 +58,7 @@ class CatalogSourceSection(object):
         """
         request = getattr(self.context, 'REQUEST', None)
         if request is not None:
-            value = request.form.get('form.widgets.'+name.replace('-', '_'),
+            value = request.form.get('form.widgets.' + name.replace('-', '_'),
                                      self.options.get(name, default))
         else:
             value = self.options.get(name, default)
