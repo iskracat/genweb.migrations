@@ -5,6 +5,16 @@ from Products.CMFPlone.interfaces import IPloneSiteRoot
 from collective.transmogrifier.transmogrifier import Transmogrifier
 
 
+class PloneorgMigrationMain(grok.View):
+    grok.context(IPloneSiteRoot)
+    grok.name('ploneorg_migration_main')
+
+    def render(self):
+        portal = api.portal.get()
+        transmogrifier = Transmogrifier(portal)
+        transmogrifier('plone.org.main')
+
+
 class MigrationTest(grok.View):
     grok.context(IPloneSiteRoot)
     grok.name('migration_test')

@@ -4,10 +4,17 @@ from zope.component import getUtility
 from plone.registry.interfaces import IRegistry
 from Products.CMFPlone.interfaces import IPloneSiteRoot
 
-from genweb.controlpanel.interface import IGenwebControlPanelSettings
-
 import json
+import pkg_resources
 import requests
+
+try:
+    pkg_resources.get_distribution('genweb.controlpanel')
+except pkg_resources.DistributionNotFound:
+    HAS_GENWEB = False
+else:
+    from genweb.controlpanel.interface import IGenwebControlPanelSettings
+    HAS_GENWEB = True
 
 PROPERTIES_MAP = {'titolespai_ca': 'html_title_ca',
                   'titolespai_es': 'html_title_es',

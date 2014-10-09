@@ -110,7 +110,7 @@ class DataFields(object):
                     for name, fieldd in getFieldsInOrder(obj.getTypeInfo().lookupSchema()):
                         if name == fieldname:
                             field = fieldd
-
+                    import ipdb;ipdb.set_trace()
                     deserializer = IDeserializer(field)
                     value = deserializer(item[key], None, item)
                     field.set(field.interface(obj), value)
