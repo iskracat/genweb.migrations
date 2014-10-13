@@ -12,12 +12,14 @@ from plone.app.testing import TEST_USER_ID
 from plone.app.testing import TEST_USER_NAME
 from plone.testing import z2
 
+from plone.app.contenttypes.testing import PLONE_APP_CONTENTTYPES_FIXTURE
+
 import unittest2 as unittest
 
 
 class GenwebMigrationsLayer(PloneSandboxLayer):
 
-    defaultBases = (PLONE_FIXTURE,)
+    defaultBases = (PLONE_APP_CONTENTTYPES_FIXTURE, PLONE_FIXTURE,)
 
     def setUpZope(self, app, configurationContext):
         """Set up Zope."""

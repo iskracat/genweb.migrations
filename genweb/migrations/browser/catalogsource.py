@@ -25,9 +25,8 @@ class CatalogSourceSection(object):
 
         self.remote_url = self.get_option('remote-url',
                                           'http://localhost:8080')
-        remote_username = self.get_option('remote-username', 'admin')
-        remote_password = self.get_option('remote-username', 'admin')
-        remote_token = self.get_option('remote-token', '')
+        self.remote_username = self.get_option('remote-username', 'admin')
+        self.remote_password = self.get_option('remote-username', 'admin')
 
         catalog_path = self.get_option('catalog-path', '/Plone/portal_catalog')
         self.site_path_length = len('/'.join(catalog_path.split('/')[:-1]))
@@ -41,14 +40,9 @@ class CatalogSourceSection(object):
 
         # Forge request
         self.payload = {'catalog_query': catalog_query}
-        self.headers = {'X-Oauth-Username': remote_username,
-                   'X-Oauth-Token': remote_token,
-                   'X-Oauth-Scope': 'widgetcli',
-                   }
 
         # Make request
-        # resp = requests.get('{}{}/get_catalog_results'.format(self.remote_url, catalog_path), params=self.payload, headers=self.headers)
-        resp = requests.get('{}{}/get_catalog_results'.format(self.remote_url, catalog_path), params=self.payload, auth=(remote_username, remote_password))
+        resp = requests.get('{}{}/get_catalog_results'.format(self.remote_url, catalog_path), params=self.payload, auth=(self.remote_username, self.remote_password))
 
         self.item_paths = sorted(simplejson.loads(resp.text))
 
@@ -79,13 +73,13 @@ class CatalogSourceSection(object):
                 item = self.get_remote_item(path)
                 if item:
                     item['_path'] = item['_path'][self.site_path_length:]
-                    item['_auth_headers'] = self.headers
+                    item['_auth_info'] = (self.remote_username, self.remote_password)
                     yield item
 
     def get_remote_item(self, path):
         item_url = '%s%s/get_item' % (self.remote_url, urllib.quote(path))
 
-        resp = requests.get(item_url, params=self.payload, headers=self.headers)
+        resp = requests.get(item_url, params=self.payload, auth=(self.remote_username, self.remote_password))
 
         if resp.status_code == 200:
             item_json = resp.text

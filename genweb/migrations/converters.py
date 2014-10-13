@@ -62,7 +62,7 @@ class NamedFileDeserializer(object):
                 if 'data' in value:
                     data = base64.b64decode(value['data'])
                 else:
-                    resp = requests.get(value['data_uri'], headers=item['_auth_headers'])
+                    resp = requests.get(value['data_uri'], auth=item['_auth_info'])
                     if resp.ok:
                         data = resp.content
                     else:

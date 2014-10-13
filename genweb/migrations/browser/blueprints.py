@@ -1,3 +1,4 @@
+from AccessControl.interfaces import IRoleManager
 from zope.interface import implements
 from zope.interface import classProvides
 from collective.transmogrifier.interfaces import ISectionBlueprint
@@ -9,6 +10,7 @@ from Products.Archetypes.interfaces import IBaseObject
 from DateTime import DateTime
 
 from plone.dexterity.interfaces import IDexterityContent
+from plone.dexterity.utils import iterSchemata
 
 from zope.interface import classProvides, implements
 from zope.schema import getFieldsInOrder
@@ -107,14 +109,17 @@ class DataFields(object):
                         obj.setFilename(item[key]['filename'])
                         obj.setContentType(item[key]['content_type'])
                 else:
-                    for name, fieldd in getFieldsInOrder(obj.getTypeInfo().lookupSchema()):
-                        if name == fieldname:
-                            field = fieldd
-                    import ipdb;ipdb.set_trace()
-                    deserializer = IDeserializer(field)
-                    value = deserializer(item[key], None, item)
-                    field.set(field.interface(obj), value)
-
+                    # We have a destination DX type
+                    field = None
+                    for schemata in iterSchemata(obj):
+                        for name, s_field in getFieldsInOrder(schemata):
+                            if name == fieldname:
+                                field = s_field
+                                deserializer = IDeserializer(field)
+                                value = deserializer(item[key], None, item)
+                                field.set(field.interface(obj), value)
+                    if not field:
+                        print('Can\'t find a suitable destination field '.format(fieldname))
             yield item
 
 
@@ -144,7 +149,6 @@ class WorkflowHistory(object):
             workflowhistorykeys = defaultKeys(options['blueprint'], name, 'workflow_history')
         self.workflowhistorykey = Matcher(*workflowhistorykeys)
 
-
     def __iter__(self):
         for item in self.previous:
             pathkey = self.pathkey(*item.keys())[0]
@@ -154,11 +158,10 @@ class WorkflowHistory(object):
                workflowhistorykey not in item:  # not enough info
                 yield item; continue
 
-            obj = self.context.unrestrictedTraverse(item[pathkey].lstrip('/'), None)
+            obj = self.context.unrestrictedTraverse(str(item[pathkey]).lstrip('/'), None)
             if obj is None or not getattr(obj, 'workflow_history', False):
                 yield item; continue
 
-            import ipdb;ipdb.set_trace()
             if IBaseObject.providedBy(obj) or IDexterityContent.providedBy(obj):
                 item_tmp = item
 
@@ -174,5 +177,51 @@ class WorkflowHistory(object):
                 workflows = self.wftool.getWorkflowsFor(obj)
                 if workflows:
                     workflows[0].updateRoleMappingsFor(obj)
+
+            yield item
+
+
+class LocalRoles(object):
+    """ """
+
+    classProvides(ISectionBlueprint)
+    implements(ISection)
+
+    def __init__(self, transmogrifier, name, options, previous):
+        self.transmogrifier = transmogrifier
+        self.name = name
+        self.options = options
+        self.previous = previous
+        self.context = transmogrifier.context
+
+        if 'path-key' in options:
+            pathkeys = options['path-key'].splitlines()
+        else:
+            pathkeys = defaultKeys(options['blueprint'], name, 'path')
+        self.pathkey = Matcher(*pathkeys)
+
+        if 'local-roles-key' in options:
+            roleskeys = options['local-roles-key'].splitlines()
+        else:
+            roleskeys = defaultKeys(options['blueprint'], name, 'local_roles')
+        self.roleskey = Matcher(*roleskeys)
+
+    def __iter__(self):
+        for item in self.previous:
+            pathkey = self.pathkey(*item.keys())[0]
+            roleskey = self.roleskey(*item.keys())[0]
+
+            if not pathkey or not roleskey or \
+               roleskey not in item:    # not enough info
+                yield item; continue
+            obj = self.context.unrestrictedTraverse(str(item[pathkey]).lstrip('/'), None)
+            if obj is None:             # path doesn't exist
+                yield item; continue
+
+            if IRoleManager.providedBy(obj):
+                for principal, roles in item[roleskey].items():
+                    if roles:
+                        obj.manage_addLocalRoles(principal, roles)
+                        obj.reindexObjectSecurity()
 
             yield item

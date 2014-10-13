@@ -25,6 +25,11 @@
         name="genweb.migrations.catalogsource"
         />
 
+    <utility
+        component=".blueprints.LocalRoles"
+        name="genweb.migrations.localroles"
+        />
+
     <transmogrifier:registerConfig
         name="plone.org.main"
         title="Migration configuration for querying the catalog of a Plone site"
