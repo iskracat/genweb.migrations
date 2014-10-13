@@ -90,5 +90,6 @@ class CatalogSourceSection(object):
             item = simplejson.loads(item_json)
         except simplejson.JSONDecodeError:
             logger.error("Could not decode item from %s." % item_url)
+            logger.error("Response is %s." % item_json)
             return None
         return item
